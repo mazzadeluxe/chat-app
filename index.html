@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>フレンドチャット</title>
+    <style>
+        /* 最小限で使いやすいシンプルなデザイン */
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; margin: 0; padding: 0; background: #f0f2f5; color: #333; }
+        .hidden { display: none !important; }
+        #app { max-width: 800px; margin: 0 auto; background: #fff; min-height: 100vh; box-shadow: 0 0 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
+        header { background: #4a76a8; color: white; padding: 15px; text-align: center; position: relative; }
+        .nav-btn { background: #3b5998; color: white; border: none; padding: 8px 12px; margin: 5px; border-radius: 4px; cursor: pointer; }
+        .nav-btn:hover { background: #2d4373; }
+        #announcement-bar { background: #ffcc00; color: #d32f2f; padding: 10px; text-align: center; font-weight: bold; }
+        .container { padding: 20px; flex: 1; overflow-y: auto; }
+        input, button { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; }
+        button { background: #4a76a8; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #3b5998; }
+        .danger-btn { background: #d32f2f; }
+        .danger-btn:hover { background: #b71c1c; }
+        .card { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
+        /* チャット画面専用 */
+        #chat-messages { height: 400px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; background: #fafafa; }
+        .msg { margin-bottom: 10px; padding: 8px; border-radius: 5px; max-width: 80%; word-wrap: break-word; position: relative; }
+        .msg.mine { background: #dcf8c6; margin-left: auto; text-align: right; }
+        .msg.others { background: #fff; border: 1px solid #ddd; margin-right: auto; }
+        .report-btn { font-size: 10px; background: #ff5252; padding: 2px 5px; width: auto; position: absolute; top: -10px; right: -10px; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <!-- お知らせバー（全員に表示） -->
+    <div id="announcement-bar" class="hidden"></div>
+
+    <!-- ログイン・登録画面 -->
+    <div id="auth-screen" class="container">
+        <h2>ログイン / 新規登録</h2>
+        <input type="email" id="email" placeholder="メールアドレス">
+        <input type="password" id="password" placeholder="パスワード（6文字以上）">
+        <button id="login-btn">ログイン</button>
+        <button id="signup-btn" style="background: #4caf50;">新規登録</button>
+    </div>
+
+    <!-- メイン画面（ログイン後に表示） -->
+    <div id="main-screen" class="hidden">
+        <header>
+            <span id="user-display-name"></span>
+            <div>
+                <button class="nav-btn" onclick="switchTab('friends')">フレンド</button>
+                <button class="nav-btn" onclick="switchTab('profile')">プロフィール</button>
+                <button class="nav-btn" onclick="switchTab('settings')">設定</button>
+                <button class="nav-btn danger-btn hidden" id="admin-nav-btn" onclick="switchTab('admin')">管理者</button>
+            </div>
+        </header>
+
+        <div class="container">
+            <!-- フレンド＆チャットタブ -->
+            <div id="tab-friends">
+                <h3>フレンド追加</h3>
+                <input type="email" id="friend-email" placeholder="相手のメールアドレスを正確に入力">
+                <button id="send-request-btn">フレンド申請を送る</button>
+                
+                <h3>承認待ちの申請</h3>
+                <div id="friend-requests-list"></div>
+
+                <h3>フレンドリスト</h3>
+                <div id="friends-list"></div>
+
+                <hr>
+                <div id="chat-area" class="hidden">
+                    <h3 id="chat-with-name">チャット</h3>
+                    <div id="chat-messages"></div>
+                    <div style="display: flex;">
+                        <input type="text" id="chat-input" placeholder="メッセージを入力...">
+                        <button id="send-msg-btn" style="width: 80px; margin-left: 5px;">送信</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- プロフィールタブ -->
+            <div id="tab-profile" class="hidden">
+                <h3>プロフィール設定</h3>
+                <input type="text" id="profile-name" placeholder="表示名を入力">
+                <button id="update-profile-btn">更新する</button>
+            </div>
+
+            <!-- 設定タブ -->
+            <div id="tab-settings" class="hidden">
+                <h3>設定</h3>
+                <button id="logout-btn" class="danger-btn">ログアウト</button>
+            </div>
+
+            <!-- 管理者タブ -->
+            <div id="tab-admin" class="hidden">
+                <h2>管理者ダッシュボード</h2>
+                
+                <div class="card">
+                    <h3>一斉お知らせ配信</h3>
+                    <input type="text" id="admin-announcement" placeholder="全員に表示するメッセージ">
+                    <button id="send-announcement-btn" class="danger-btn">配信</button>
+                </div>
+
+                <div class="card">
+                    <h3>ユーザー管理（凍結・アクティビティ）</h3>
+                    <div id="admin-users-list"></div>
+                </div>
+
+                <div class="card">
+                    <h3>通報されたメッセージ</h3>
+                    <div id="admin-reports-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Firebase SDKの読み込み (v10 Modular API) -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, collection, doc, setDoc, getDoc, getDocs, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // あなたのFirebase設定[cite: 2]
+    const firebaseConfig = {
+        apiKey: "AIzaSyDf2_te0atlBQNSPu8fS4zt3KMeHAzgW74",
+        authDomain: "test-prep-app-7d1fe.firebaseapp.com",
+        projectId: "test-prep-app-7d1fe",
+        storageBucket: "test-prep-app-7d1fe.firebasestorage.app",
+        messagingSenderId: "762482946733",
+        appId: "1:762482946733:web:da97907b542ea70b4c4c24"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const ADMIN_EMAIL = "mazza.deluxe77@gmail.com";
+    let currentUserData = null;
+    let currentChatId = null;
+    let unsubChat = null; // チャットのリスナー解除用
+
+    // DOM要素
+    const UI = {
+        authScreen: document.getElementById('auth-screen'),
+        mainScreen: document.getElementById('main-screen'),
+        adminNavBtn: document.getElementById('admin-nav-btn'),
+        announcementBar: document.getElementById('announcement-bar'),
+        tabs: ['friends', 'profile', 'settings', 'admin']
+    };
+
+    // --- タブ切り替え ---
+    window.switchTab = (tabId) => {
+        UI.tabs.forEach(t => document.getElementById(`tab-${t}`).classList.add('hidden'));
+        document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+    };
+
+    // --- 認証状態の監視 ---
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            // ログイン時、データベースからユーザー情報を取得
+            const userRef = doc(db, "chatApp_users", user.email);
+            const userSnap = await getDoc(userRef);
+            
+            if (userSnap.exists()) {
+                currentUserData = userSnap.data();
+                // 【凍結チェック】
+                if (currentUserData.isFrozen) {
+                    alert("あなたのアカウントは管理者によって凍結されています。チャットを利用できません。");
+                    signOut(auth);
+                    return;
+                }
+                // アクティビティ（最終ログイン）更新
+                await updateDoc(userRef, { lastActive: serverTimestamp() });
+            } else {
+                // 初回ログイン時のデータ作成
+                currentUserData = { email: user.email, name: user.email.split('@')[0], isFrozen: false, lastActive: serverTimestamp() };
+                await setDoc(userRef, currentUserData);
+            }
+
+            document.getElementById('user-display-name').innerText = `ようこそ、${currentUserData.name}さん`;
+            UI.authScreen.classList.add('hidden');
+            UI.mainScreen.classList.remove('hidden');
+
+            // 管理者ならボタン表示
+            if (user.email === ADMIN_EMAIL) {
+                UI.adminNavBtn.classList.remove('hidden');
+                loadAdminData();
+            }
+
+            // リアルタイムリスナー起動
+            listenToAnnouncements();
+            listenToFriendRequests();
+            listenToFriends();
+        } else {
+            // ログアウト時
+            UI.authScreen.classList.remove('hidden');
+            UI.mainScreen.classList.add('hidden');
+            currentUserData = null;
+        }
+    });
+
+    // --- ログイン・登録処理 ---
+    document.getElementById('login-btn').addEventListener('click', () => {
+        signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value)
+            .catch(err => alert("ログイン失敗: " + err.message));
+    });
+    document.getElementById('signup-btn').addEventListener('click', () => {
+        createUserWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value)
+            .catch(err => alert("登録失敗: " + err.message));
+    });
+    document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
+
+    // --- プロフィール更新 ---
+    document.getElementById('update-profile-btn').addEventListener('click', async () => {
+        const newName = document.getElementById('profile-name').value;
+        if (!newName) return;
+        await updateDoc(doc(db, "chatApp_users", auth.currentUser.email), { name: newName });
+        alert("プロフィールを更新しました！");
+    });
+
+    // --- 一斉お知らせの監視 ---
+    function listenToAnnouncements() {
+        const q = query(collection(db, "chatApp_announcements"), orderBy("timestamp", "desc"));
+        onSnapshot(q, (snapshot) => {
+            if (!snapshot.empty) {
+                const latest = snapshot.docs[0].data();
+                UI.announcementBar.innerText = "📢 お知らせ: " + latest.text;
+                UI.announcementBar.classList.remove('hidden');
+            } else {
+                UI.announcementBar.classList.add('hidden');
+            }
+        });
+    }
+
+    // --- フレンド機能 ---
+    document.getElementById('send-request-btn').addEventListener('click', async () => {
+        const toEmail = document.getElementById('friend-email').value;
+        if (toEmail === auth.currentUser.email) return alert("自分には送れません");
+        
+        const targetRef = doc(db, "chatApp_users", toEmail);
+        const targetSnap = await getDoc(targetRef);
+        if (!targetSnap.exists()) return alert("そのメールアドレスのユーザーは見つかりません");
+
+        await addDoc(collection(db, "chatApp_friendRequests"), {
+            from: auth.currentUser.email,
+            to: toEmail,
+            status: 'pending',
+            timestamp: serverTimestamp()
+        });
+        alert("申請を送りました！");
+    });
+
+    function listenToFriendRequests() {
+        const q = query(collection(db, "chatApp_friendRequests"), where("to", "==", auth.currentUser.email), where("status", "==", "pending"));
+        onSnapshot(q, (snapshot) => {
+            const list = document.getElementById('friend-requests-list');
+            list.innerHTML = "";
+            snapshot.forEach(docSnap => {
+                const req = docSnap.data();
+                const div = document.createElement('div');
+                div.className = "card";
+                div.innerHTML = `<b>${req.from}</b> から申請が来ています 
+                    <button style="width:60px; background:#4caf50;" onclick="acceptFriend('${docSnap.id}', '${req.from}')">承認</button>`;
+                list.appendChild(div);
+            });
+        });
+    }
+
+    window.acceptFriend = async (requestId, fromEmail) => {
+        await updateDoc(doc(db, "chatApp_friendRequests", requestId), { status: 'accepted' });
+        // 双方向にフレンド登録（データ分離のためchatApp_friendsサブコレクションなどを使わず、IDを結合して管理）
+        alert("承認しました！チャットが可能です。");
+    };
+
+    function listenToFriends() {
+        // 自分宛てで承認されたもの、または自分が送って承認されたものを取得
+        const q1 = query(collection(db, "chatApp_friendRequests"), where("to", "==", auth.currentUser.email), where("status", "==", "accepted"));
+        const q2 = query(collection(db, "chatApp_friendRequests"), where("from", "==", auth.currentUser.email), where("status", "==", "accepted"));
+        
+        const renderFriends = (docs) => {
+            const list = document.getElementById('friends-list');
+            list.innerHTML = "";
+            docs.forEach(data => {
+                const friendEmail = data.to === auth.currentUser.email ? data.from : data.to;
+                const div = document.createElement('div');
+                div.className = "card";
+                div.innerHTML = `<b>${friendEmail}</b> <button onclick="openChat('${friendEmail}')">チャットする</button>`;
+                list.appendChild(div);
+            });
+        };
+
+        // 簡易的に両方監視して統合（※FirestoreはORクエリが制限されるため分割）
+        let friendsData = new Map();
+        const updateMap = (snapshot) => {
+            snapshot.forEach(d => friendsData.set(d.id, d.data()));
+            renderFriends(Array.from(friendsData.values()));
+        };
+        onSnapshot(q1, updateMap);
+        onSnapshot(q2, updateMap);
+    }
+
+    // --- チャット機能 ---
+    window.openChat = (friendEmail) => {
+        document.getElementById('chat-area').classList.remove('hidden');
+        document.getElementById('chat-with-name').innerText = friendEmail + " とのチャット";
+        
+        // 2人のメアドをアルファベット順に繋げて、一意のチャットルームIDを作る
+        const emails = [auth.currentUser.email, friendEmail].sort();
+        currentChatId = emails.join("_");
+
+        if (unsubChat) unsubChat(); // 前のチャットの監視を解除
+        
+        const q = query(collection(db, `chatApp_chats/${currentChatId}/messages`), orderBy("timestamp", "asc"));
+        unsubChat = onSnapshot(q, (snapshot) => {
+            const box = document.getElementById('chat-messages');
+            box.innerHTML = "";
+            snapshot.forEach(docSnap => {
+                const msg = docSnap.data();
+                const div = document.createElement('div');
+                div.className = "msg " + (msg.sender === auth.currentUser.email ? "mine" : "others");
+                div.innerText = msg.text;
+                
+                // 通報ボタン（相手のメッセージのみ）
+                if (msg.sender !== auth.currentUser.email) {
+                    const rBtn = document.createElement('button');
+                    rBtn.className = "report-btn";
+                    rBtn.innerText = "通報";
+                    rBtn.onclick = () => reportMessage(docSnap.id, msg.text, msg.sender);
+                    div.appendChild(rBtn);
+                }
+                box.appendChild(div);
+            });
+            box.scrollTop = box.scrollHeight; // 一番下にスクロール
+        });
+    };
+
+    document.getElementById('send-msg-btn').addEventListener('click', async () => {
+        const input = document.getElementById('chat-input');
+        if (!input.value || !currentChatId) return;
+        await addDoc(collection(db, `chatApp_chats/${currentChatId}/messages`), {
+            sender: auth.currentUser.email,
+            text: input.value,
+            timestamp: serverTimestamp()
+        });
+        input.value = "";
+    });
+
+    // --- 通報機能 ---
+    window.reportMessage = async (msgId, text, sender) => {
+        if (!confirm("このメッセージを管理者に通報しますか？")) return;
+        await addDoc(collection(db, "chatApp_reports"), {
+            msgId, text, sender,
+            reportedBy: auth.currentUser.email,
+            timestamp: serverTimestamp()
+        });
+        alert("通報しました。");
+    };
+
+    // === 管理者専用機能 ===
+    document.getElementById('send-announcement-btn').addEventListener('click', async () => {
+        const text = document.getElementById('admin-announcement').value;
+        if (!text) return;
+        await addDoc(collection(db, "chatApp_announcements"), { text, timestamp: serverTimestamp() });
+        alert("配信しました");
+    });
+
+    window.toggleFreeze = async (email, currentStatus) => {
+        await updateDoc(doc(db, "chatApp_users", email), { isFrozen: !currentStatus });
+        alert(`${email} を${!currentStatus ? '凍結' : '解除'}しました`);
+    };
+
+    function loadAdminData() {
+        // ユーザー一覧とアクティビティ・凍結管理
+        onSnapshot(collection(db, "chatApp_users"), (snapshot) => {
+            const list = document.getElementById('admin-users-list');
+            list.innerHTML = "";
+            snapshot.forEach(docSnap => {
+                const u = docSnap.data();
+                if (u.email === ADMIN_EMAIL) return; // 管理者自身は表示しない
+                const timeStr = u.lastActive ? new Date(u.lastActive.toDate()).toLocaleString() : "不明";
+                const div = document.createElement('div');
+                div.className = "card";
+                div.innerHTML = `
+                    <b>${u.email}</b> (表示名: ${u.name})<br>
+                    <small>最終アクセス: ${timeStr}</small><br>
+                    <button class="${u.isFrozen ? '' : 'danger-btn'}" onclick="toggleFreeze('${u.email}', ${u.isFrozen})">
+                        ${u.isFrozen ? '凍結解除する' : '凍結する'}
+                    </button>
+                `;
+                list.appendChild(div);
+            });
+        });
+
+        // 通報一覧
+        onSnapshot(collection(db, "chatApp_reports"), (snapshot) => {
+            const list = document.getElementById('admin-reports-list');
+            list.innerHTML = "";
+            snapshot.forEach(docSnap => {
+                const r = docSnap.data();
+                const div = document.createElement('div');
+                div.className = "card";
+                div.innerHTML = `
+                    <b>通報者:</b> ${r.reportedBy}<br>
+                    <b>対象者:</b> ${r.sender}<br>
+                    <b>内容:</b> <span style="color:red;">${r.text}</span>
+                `;
+                list.appendChild(div);
+            });
+        });
+    }
+</script>
+</body>
+</html>
