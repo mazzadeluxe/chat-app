@@ -3,126 +3,192 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>フレンドチャット</title>
+    <title>ネイビーチャット</title>
+    <!-- Tailwind CSS の読み込み -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        navy: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8', 800: '#1e40af', 900: '#1e3a8a' }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        /* 最小限で使いやすいシンプルなデザイン */
-        body { font-family: 'Helvetica Neue', Arial, sans-serif; margin: 0; padding: 0; background: #f0f2f5; color: #333; }
-        .hidden { display: none !important; }
-        #app { max-width: 800px; margin: 0 auto; background: #fff; min-height: 100vh; box-shadow: 0 0 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
-        header { background: #4a76a8; color: white; padding: 15px; text-align: center; position: relative; }
-        .nav-btn { background: #3b5998; color: white; border: none; padding: 8px 12px; margin: 5px; border-radius: 4px; cursor: pointer; }
-        .nav-btn:hover { background: #2d4373; }
-        #announcement-bar { background: #ffcc00; color: #d32f2f; padding: 10px; text-align: center; font-weight: bold; }
-        .container { padding: 20px; flex: 1; overflow-y: auto; }
-        input, button { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; }
-        button { background: #4a76a8; color: white; border: none; border-radius: 5px; cursor: pointer; }
-        button:hover { background: #3b5998; }
-        .danger-btn { background: #d32f2f; }
-        .danger-btn:hover { background: #b71c1c; }
-        .card { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
-        /* チャット画面専用 */
-        #chat-messages { height: 400px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; background: #fafafa; }
-        .msg { margin-bottom: 10px; padding: 8px; border-radius: 5px; max-width: 80%; word-wrap: break-word; position: relative; }
-        .msg.mine { background: #dcf8c6; margin-left: auto; text-align: right; }
-        .msg.others { background: #fff; border: 1px solid #ddd; margin-right: auto; }
-        .report-btn { font-size: 10px; background: #ff5252; padding: 2px 5px; width: auto; position: absolute; top: -10px; right: -10px; border-radius: 10px; }
+        /* チャットのスクロールバーなどを可愛く */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background-color: #475569; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
-<body>
+<body class="bg-navy-50 text-gray-800 dark:bg-slate-900 dark:text-gray-100 transition-colors duration-300 font-sans">
 
-<div id="app">
-    <!-- お知らせバー（全員に表示） -->
-    <div id="announcement-bar" class="hidden"></div>
+<div id="app" class="max-w-md mx-auto bg-white dark:bg-slate-800 min-h-screen shadow-2xl flex flex-col relative overflow-hidden transition-colors duration-300">
+    
+    <!-- お知らせバー -->
+    <div id="announcement-bar" class="hidden bg-yellow-400 text-yellow-900 font-bold p-3 text-center text-sm shadow-md z-20 relative"></div>
 
     <!-- ログイン・登録画面 -->
-    <div id="auth-screen" class="container">
-        <h2>ログイン / 新規登録</h2>
-        <input type="email" id="email" placeholder="メールアドレス">
-        <input type="password" id="password" placeholder="パスワード（6文字以上）">
-        <button id="login-btn">ログイン</button>
-        <button id="signup-btn" style="background: #4caf50;">新規登録</button>
+    <div id="auth-screen" class="p-8 flex flex-col justify-center flex-1">
+        <div class="text-center mb-8">
+            <svg class="w-16 h-16 mx-auto text-navy-600 dark:text-navy-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+            <h2 class="text-2xl font-extrabold text-navy-800 dark:text-white">Navy Chat</h2>
+        </div>
+        <div class="space-y-4">
+            <input type="email" id="email" placeholder="メールアドレス" class="w-full p-4 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-navy-500 transition">
+            <input type="password" id="password" placeholder="パスワード（6文字以上）" class="w-full p-4 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-navy-500 transition">
+            <button id="login-btn" class="w-full py-4 bg-navy-600 hover:bg-navy-700 text-white font-bold rounded-2xl shadow-lg transition transform hover:-translate-y-1">ログイン</button>
+            <button id="signup-btn" class="w-full py-4 bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-2xl shadow-lg transition transform hover:-translate-y-1">新規登録</button>
+        </div>
     </div>
 
-    <!-- メイン画面（ログイン後に表示） -->
-    <div id="main-screen" class="hidden">
-        <header>
-            <span id="user-display-name"></span>
-            <div>
-                <button class="nav-btn" onclick="switchTab('friends')">フレンド</button>
-                <button class="nav-btn" onclick="switchTab('profile')">プロフィール</button>
-                <button class="nav-btn" onclick="switchTab('settings')">設定</button>
-                <button class="nav-btn danger-btn hidden" id="admin-nav-btn" onclick="switchTab('admin')">管理者</button>
-            </div>
+    <!-- メイン画面 -->
+    <div id="main-screen" class="hidden flex-1 flex flex-col h-screen">
+        
+        <!-- ナビゲーションバー (上に固定) -->
+        <header class="bg-navy-700 text-white rounded-b-3xl shadow-lg pt-4 pb-2 px-2 z-10">
+            <div class="text-center mb-3 text-sm font-medium tracking-wider opacity-80" id="user-display-name"></div>
+            <nav class="flex justify-around items-center">
+                <button onclick="switchTab('friends')" class="nav-btn flex flex-col items-center p-2 rounded-xl hover:bg-navy-600 transition w-1/4">
+                    <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    <span class="text-xs">フレンド</span>
+                </button>
+                <button onclick="switchTab('profile')" class="nav-btn flex flex-col items-center p-2 rounded-xl hover:bg-navy-600 transition w-1/4">
+                    <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                    <span class="text-xs">プロフ</span>
+                </button>
+                <button onclick="switchTab('settings')" class="nav-btn flex flex-col items-center p-2 rounded-xl hover:bg-navy-600 transition w-1/4">
+                    <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    <span class="text-xs">設定</span>
+                </button>
+                <button id="admin-nav-btn" onclick="switchTab('admin')" class="hidden nav-btn flex flex-col items-center p-2 rounded-xl bg-red-600 hover:bg-red-700 transition w-1/4">
+                    <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                    <span class="text-xs">管理者</span>
+                </button>
+            </nav>
         </header>
 
-        <div class="container">
+        <!-- コンテンツエリア -->
+        <div class="p-4 flex-1 overflow-y-auto">
+            
             <!-- フレンド＆チャットタブ -->
-            <div id="tab-friends">
-                <h3>フレンド追加</h3>
-                <input type="email" id="friend-email" placeholder="相手のメールアドレスを正確に入力">
-                <button id="send-request-btn">フレンド申請を送る</button>
-                
-                <h3>承認待ちの申請</h3>
-                <div id="friend-requests-list"></div>
-
-                <h3>フレンドリスト</h3>
-                <div id="friends-list"></div>
-
-                <hr>
-                <div id="chat-area" class="hidden">
-                    <h3 id="chat-with-name">チャット</h3>
-                    <div id="chat-messages"></div>
-                    <div style="display: flex;">
-                        <input type="text" id="chat-input" placeholder="メッセージを入力...">
-                        <button id="send-msg-btn" style="width: 80px; margin-left: 5px;">送信</button>
+            <div id="tab-friends" class="space-y-6">
+                <!-- 検索エリア -->
+                <div class="bg-blue-50 dark:bg-slate-700 p-4 rounded-2xl shadow-sm border border-blue-100 dark:border-slate-600">
+                    <h3 class="text-sm font-bold text-navy-800 dark:text-blue-300 mb-2">フレンド追加</h3>
+                    <div class="flex gap-2">
+                        <input type="email" id="friend-email" placeholder="相手のメールアドレス" class="flex-1 p-3 text-sm rounded-xl border border-gray-300 dark:border-slate-600 dark:bg-slate-800 focus:outline-none focus:border-navy-500">
+                        <button id="send-request-btn" class="bg-navy-600 hover:bg-navy-700 text-white px-4 rounded-xl shadow transition whitespace-nowrap">申請</button>
                     </div>
+                </div>
+                
+                <!-- 承認待ち -->
+                <div>
+                    <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider">承認待ち</h3>
+                    <div id="friend-requests-list" class="space-y-2"></div>
+                </div>
+
+                <!-- フレンドリスト -->
+                <div>
+                    <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider">フレンド</h3>
+                    <div id="friends-list" class="space-y-2"></div>
+                </div>
+            </div>
+
+            <!-- チャット画面 (独立して表示) -->
+            <div id="tab-chat" class="hidden flex flex-col h-full absolute inset-0 bg-white dark:bg-slate-800 z-20">
+                <header class="bg-navy-700 text-white p-4 flex items-center shadow-md">
+                    <button onclick="closeChat()" class="mr-4 p-2 bg-navy-800 rounded-full hover:bg-navy-600 transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+                    <h3 id="chat-with-name" class="font-bold text-lg truncate"></h3>
+                </header>
+                <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-slate-900"></div>
+                <div class="p-3 bg-white dark:bg-slate-800 border-t dark:border-slate-700 flex gap-2">
+                    <input type="text" id="chat-input" placeholder="メッセージ..." class="flex-1 p-3 rounded-full border border-gray-300 dark:border-slate-600 dark:bg-slate-700 focus:outline-none focus:border-navy-500">
+                    <button id="send-msg-btn" class="bg-navy-600 text-white p-3 rounded-full shadow hover:bg-navy-700 transition">
+                        <svg class="w-6 h-6 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                    </button>
                 </div>
             </div>
 
             <!-- プロフィールタブ -->
-            <div id="tab-profile" class="hidden">
-                <h3>プロフィール設定</h3>
-                <input type="text" id="profile-name" placeholder="表示名を入力">
-                <button id="update-profile-btn">更新する</button>
+            <div id="tab-profile" class="hidden space-y-4">
+                <div class="bg-white dark:bg-slate-700 p-5 rounded-2xl shadow-sm border dark:border-slate-600">
+                    <h3 class="text-sm font-bold text-gray-500 dark:text-gray-300 mb-4">表示名の変更</h3>
+                    <input type="text" id="profile-name" placeholder="新しい表示名" class="w-full p-4 mb-4 border rounded-xl dark:bg-slate-800 dark:border-slate-600 focus:outline-none focus:border-navy-500">
+                    <button id="update-profile-btn" class="w-full py-3 bg-navy-600 text-white font-bold rounded-xl shadow hover:bg-navy-700 transition">更新する</button>
+                </div>
             </div>
 
             <!-- 設定タブ -->
-            <div id="tab-settings" class="hidden">
-                <h3>設定</h3>
-                <button id="logout-btn" class="danger-btn">ログアウト</button>
+            <div id="tab-settings" class="hidden space-y-4">
+                <div class="bg-white dark:bg-slate-700 p-5 rounded-2xl shadow-sm border dark:border-slate-600 space-y-6">
+                    
+                    <!-- ダークモード切替 -->
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="font-bold dark:text-white">🌙 ダークモード</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">目に優しい暗いテーマ</p>
+                        </div>
+                        <button id="theme-toggle" class="w-12 h-6 rounded-full bg-gray-300 dark:bg-navy-500 relative transition-colors duration-300">
+                            <div id="theme-knob" class="w-5 h-5 bg-white rounded-full absolute top-0.5 left-1 shadow transition-transform duration-300 transform dark:translate-x-5"></div>
+                        </button>
+                    </div>
+
+                    <hr class="dark:border-slate-600">
+
+                    <!-- 検索拒否機能 -->
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="font-bold dark:text-white">🔍 メアド検索を許可</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">オフにすると相手から見つかりません</p>
+                        </div>
+                        <button id="search-toggle" class="w-12 h-6 rounded-full bg-navy-500 relative transition-colors duration-300">
+                            <div id="search-knob" class="w-5 h-5 bg-white rounded-full absolute top-0.5 left-1 shadow transition-transform duration-300 transform translate-x-5"></div>
+                        </button>
+                    </div>
+
+                    <hr class="dark:border-slate-600">
+                    
+                    <button id="logout-btn" class="w-full py-3 bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-200 font-bold rounded-xl transition hover:bg-red-200">ログアウト</button>
+                </div>
             </div>
 
             <!-- 管理者タブ -->
-            <div id="tab-admin" class="hidden">
-                <h2>管理者ダッシュボード</h2>
-                
-                <div class="card">
-                    <h3>一斉お知らせ配信</h3>
-                    <input type="text" id="admin-announcement" placeholder="全員に表示するメッセージ">
-                    <button id="send-announcement-btn" class="danger-btn">配信</button>
+            <div id="tab-admin" class="hidden space-y-4">
+                <div class="bg-white dark:bg-slate-700 p-4 rounded-2xl shadow-sm border border-red-200 dark:border-red-900">
+                    <h3 class="font-bold text-red-600 dark:text-red-400 mb-2">📢 全体アナウンス</h3>
+                    <input type="text" id="admin-announcement" placeholder="メッセージ" class="w-full p-3 mb-2 rounded-xl border dark:bg-slate-800 dark:border-slate-600">
+                    <button id="send-announcement-btn" class="w-full bg-red-600 text-white py-2 rounded-xl font-bold">配信</button>
                 </div>
-
-                <div class="card">
-                    <h3>ユーザー管理（凍結・アクティビティ）</h3>
-                    <div id="admin-users-list"></div>
+                <div class="bg-white dark:bg-slate-700 p-4 rounded-2xl shadow-sm border dark:border-slate-600">
+                    <h3 class="font-bold mb-2 dark:text-white">ユーザー管理</h3>
+                    <div id="admin-users-list" class="space-y-2 text-sm"></div>
                 </div>
-
-                <div class="card">
-                    <h3>通報されたメッセージ</h3>
-                    <div id="admin-reports-list"></div>
+                <div class="bg-white dark:bg-slate-700 p-4 rounded-2xl shadow-sm border dark:border-slate-600">
+                    <h3 class="font-bold mb-2 dark:text-white">通報履歴</h3>
+                    <div id="admin-reports-list" class="space-y-2 text-sm"></div>
                 </div>
             </div>
+
         </div>
     </div>
 </div>
 
-<!-- Firebase SDKの読み込み (v10 Modular API) -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { getFirestore, collection, doc, setDoc, getDoc, getDocs, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // あなたのFirebase設定[cite: 2]
+    // ダークモードの初期化（localStorageから復元）
+    if(localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark');
+
     const firebaseConfig = {
         apiKey: "AIzaSyDf2_te0atlBQNSPu8fS4zt3KMeHAzgW74",
         authDomain: "test-prep-app-7d1fe.firebaseapp.com",
@@ -139,97 +205,148 @@
     const ADMIN_EMAIL = "mazza.deluxe77@gmail.com";
     let currentUserData = null;
     let currentChatId = null;
-    let unsubChat = null; // チャットのリスナー解除用
+    let unsubChat = null;
+    // 表示名キャッシュ（プライバシー保護のため、メアドではなく表示名を使う）
+    const nameCache = new Map(); 
 
-    // DOM要素
     const UI = {
         authScreen: document.getElementById('auth-screen'),
         mainScreen: document.getElementById('main-screen'),
         adminNavBtn: document.getElementById('admin-nav-btn'),
         announcementBar: document.getElementById('announcement-bar'),
+        loginBtn: document.getElementById('login-btn'),
+        signupBtn: document.getElementById('signup-btn'),
         tabs: ['friends', 'profile', 'settings', 'admin']
     };
 
-    // --- タブ切り替え ---
     window.switchTab = (tabId) => {
         UI.tabs.forEach(t => document.getElementById(`tab-${t}`).classList.add('hidden'));
         document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+        document.getElementById('tab-chat').classList.add('hidden'); // チャット画面を隠す
     };
 
-    // --- 認証状態の監視 ---
+    window.closeChat = () => {
+        document.getElementById('tab-chat').classList.add('hidden');
+        if(unsubChat) unsubChat();
+    };
+
+    // キャッシュを利用して名前を取得する便利関数
+    async function getUserName(email) {
+        if(nameCache.has(email)) return nameCache.get(email);
+        try {
+            const snap = await getDoc(doc(db, "chatApp_users", email));
+            const name = snap.exists() ? snap.data().name : email.split('@')[0];
+            nameCache.set(email, name);
+            return name;
+        } catch { return email.split('@')[0]; }
+    }
+
     onAuthStateChanged(auth, async (user) => {
         if (user) {
-            // ログイン時、データベースからユーザー情報を取得
-            const userRef = doc(db, "chatApp_users", user.email);
-            const userSnap = await getDoc(userRef);
-            
-            if (userSnap.exists()) {
-                currentUserData = userSnap.data();
-                // 【凍結チェック】
-                if (currentUserData.isFrozen) {
-                    alert("あなたのアカウントは管理者によって凍結されています。チャットを利用できません。");
-                    signOut(auth);
-                    return;
+            UI.loginBtn.innerText = "読込中...";
+            try {
+                const userRef = doc(db, "chatApp_users", user.email);
+                const userSnap = await getDoc(userRef);
+                
+                if (userSnap.exists()) {
+                    currentUserData = userSnap.data();
+                    if (currentUserData.isFrozen) {
+                        alert("アカウントが凍結されています。");
+                        await signOut(auth); return;
+                    }
+                    await updateDoc(userRef, { lastActive: serverTimestamp() });
+                } else {
+                    // searchable: true（デフォルトは検索許可）
+                    currentUserData = { email: user.email, name: user.email.split('@')[0], isFrozen: false, searchable: true, lastActive: serverTimestamp() };
+                    await setDoc(userRef, currentUserData);
                 }
-                // アクティビティ（最終ログイン）更新
-                await updateDoc(userRef, { lastActive: serverTimestamp() });
-            } else {
-                // 初回ログイン時のデータ作成
-                currentUserData = { email: user.email, name: user.email.split('@')[0], isFrozen: false, lastActive: serverTimestamp() };
-                await setDoc(userRef, currentUserData);
+
+                document.getElementById('user-display-name').innerText = currentUserData.name;
+                document.getElementById('profile-name').value = currentUserData.name;
+                
+                // 検索拒否スイッチの初期化
+                updateSearchToggleUI(currentUserData.searchable !== false);
+
+                UI.authScreen.classList.add('hidden');
+                UI.mainScreen.classList.remove('hidden');
+                UI.loginBtn.innerText = "ログイン";
+
+                if (user.email === ADMIN_EMAIL) {
+                    UI.adminNavBtn.classList.remove('hidden');
+                    UI.adminNavBtn.classList.add('flex');
+                    loadAdminData();
+                }
+
+                listenToAnnouncements();
+                listenToFriendRequests();
+                listenToFriends();
+            } catch(e) {
+                alert("データベースエラー: " + e.message);
+                await signOut(auth);
+                UI.loginBtn.innerText = "ログイン";
             }
-
-            document.getElementById('user-display-name').innerText = `ようこそ、${currentUserData.name}さん`;
-            UI.authScreen.classList.add('hidden');
-            UI.mainScreen.classList.remove('hidden');
-
-            // 管理者ならボタン表示
-            if (user.email === ADMIN_EMAIL) {
-                UI.adminNavBtn.classList.remove('hidden');
-                loadAdminData();
-            }
-
-            // リアルタイムリスナー起動
-            listenToAnnouncements();
-            listenToFriendRequests();
-            listenToFriends();
         } else {
-            // ログアウト時
             UI.authScreen.classList.remove('hidden');
             UI.mainScreen.classList.add('hidden');
             currentUserData = null;
         }
     });
 
-    // --- ログイン・登録処理 ---
-    document.getElementById('login-btn').addEventListener('click', () => {
-        signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value)
-            .catch(err => alert("ログイン失敗: " + err.message));
+    UI.loginBtn.addEventListener('click', async () => {
+        try {
+            await signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value);
+        } catch (err) { alert("ログイン失敗: " + err.message); }
     });
-    document.getElementById('signup-btn').addEventListener('click', () => {
-        createUserWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value)
-            .catch(err => alert("登録失敗: " + err.message));
+
+    UI.signupBtn.addEventListener('click', async () => {
+        try {
+            await createUserWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value);
+        } catch (err) { alert("登録失敗: " + err.message); }
     });
+
     document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
-    // --- プロフィール更新 ---
+    // --- プロフィール・設定 ---
     document.getElementById('update-profile-btn').addEventListener('click', async () => {
         const newName = document.getElementById('profile-name').value;
         if (!newName) return;
         await updateDoc(doc(db, "chatApp_users", auth.currentUser.email), { name: newName });
-        alert("プロフィールを更新しました！");
+        document.getElementById('user-display-name').innerText = newName;
+        alert("更新しました！");
     });
 
-    // --- 一斉お知らせの監視 ---
+    // ダークモード切替処理
+    document.getElementById('theme-toggle').addEventListener('click', () => {
+        const isDark = document.documentElement.classList.toggle('dark');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    });
+
+    // 検索拒否トグル処理
+    function updateSearchToggleUI(isSearchable) {
+        const knob = document.getElementById('search-knob');
+        const bg = document.getElementById('search-toggle');
+        if (isSearchable) {
+            knob.classList.add('translate-x-5'); bg.classList.add('bg-navy-500'); bg.classList.remove('bg-gray-300');
+        } else {
+            knob.classList.remove('translate-x-5'); bg.classList.remove('bg-navy-500'); bg.classList.add('bg-gray-300');
+        }
+    }
+    
+    document.getElementById('search-toggle').addEventListener('click', async () => {
+        const currentRef = doc(db, "chatApp_users", auth.currentUser.email);
+        const snap = await getDoc(currentRef);
+        const newState = !(snap.data().searchable !== false); // 反転
+        await updateDoc(currentRef, { searchable: newState });
+        updateSearchToggleUI(newState);
+        alert(newState ? "検索を許可しました。" : "検索を拒否しました。");
+    });
+
+    // --- お知らせ ---
     function listenToAnnouncements() {
-        const q = query(collection(db, "chatApp_announcements"), orderBy("timestamp", "desc"));
-        onSnapshot(q, (snapshot) => {
+        onSnapshot(query(collection(db, "chatApp_announcements"), orderBy("timestamp", "desc")), (snapshot) => {
             if (!snapshot.empty) {
-                const latest = snapshot.docs[0].data();
-                UI.announcementBar.innerText = "📢 お知らせ: " + latest.text;
+                UI.announcementBar.innerText = "📢 " + snapshot.docs[0].data().text;
                 UI.announcementBar.classList.remove('hidden');
-            } else {
-                UI.announcementBar.classList.add('hidden');
             }
         });
     }
@@ -237,175 +354,150 @@
     // --- フレンド機能 ---
     document.getElementById('send-request-btn').addEventListener('click', async () => {
         const toEmail = document.getElementById('friend-email').value;
-        if (toEmail === auth.currentUser.email) return alert("自分には送れません");
-        
-        const targetRef = doc(db, "chatApp_users", toEmail);
-        const targetSnap = await getDoc(targetRef);
-        if (!targetSnap.exists()) return alert("そのメールアドレスのユーザーは見つかりません");
-
-        await addDoc(collection(db, "chatApp_friendRequests"), {
-            from: auth.currentUser.email,
-            to: toEmail,
-            status: 'pending',
-            timestamp: serverTimestamp()
-        });
-        alert("申請を送りました！");
+        if (!toEmail || toEmail === auth.currentUser.email) return;
+        try {
+            const targetSnap = await getDoc(doc(db, "chatApp_users", toEmail));
+            // 相手が存在しないか、検索拒否（searchable: false）の場合は弾く
+            if (!targetSnap.exists() || targetSnap.data().searchable === false) {
+                return alert("ユーザーが見つからないか、相手が検索を許可していません。");
+            }
+            await addDoc(collection(db, "chatApp_friendRequests"), { from: auth.currentUser.email, to: toEmail, status: 'pending', timestamp: serverTimestamp() });
+            alert("申請を送りました！");
+            document.getElementById('friend-email').value = "";
+        } catch(e) { alert("エラー: " + e.message); }
     });
 
     function listenToFriendRequests() {
-        const q = query(collection(db, "chatApp_friendRequests"), where("to", "==", auth.currentUser.email), where("status", "==", "pending"));
-        onSnapshot(q, (snapshot) => {
+        onSnapshot(query(collection(db, "chatApp_friendRequests"), where("to", "==", auth.currentUser.email), where("status", "==", "pending")), async (snapshot) => {
             const list = document.getElementById('friend-requests-list');
             list.innerHTML = "";
-            snapshot.forEach(docSnap => {
+            for (const docSnap of snapshot.docs) {
                 const req = docSnap.data();
+                const fromName = await getUserName(req.from);
                 const div = document.createElement('div');
-                div.className = "card";
-                div.innerHTML = `<b>${req.from}</b> から申請が来ています 
-                    <button style="width:60px; background:#4caf50;" onclick="acceptFriend('${docSnap.id}', '${req.from}')">承認</button>`;
+                div.className = "flex justify-between items-center bg-white dark:bg-slate-700 p-3 rounded-xl shadow-sm border dark:border-slate-600";
+                div.innerHTML = `<span class="font-bold truncate w-2/3">${fromName}</span> <button class="bg-teal-500 text-white px-3 py-1 rounded-lg text-sm" onclick="acceptFriend('${docSnap.id}')">承認</button>`;
                 list.appendChild(div);
-            });
+            }
         });
     }
 
-    window.acceptFriend = async (requestId, fromEmail) => {
+    window.acceptFriend = async (requestId) => {
         await updateDoc(doc(db, "chatApp_friendRequests", requestId), { status: 'accepted' });
-        // 双方向にフレンド登録（データ分離のためchatApp_friendsサブコレクションなどを使わず、IDを結合して管理）
-        alert("承認しました！チャットが可能です。");
     };
 
     function listenToFriends() {
-        // 自分宛てで承認されたもの、または自分が送って承認されたものを取得
         const q1 = query(collection(db, "chatApp_friendRequests"), where("to", "==", auth.currentUser.email), where("status", "==", "accepted"));
         const q2 = query(collection(db, "chatApp_friendRequests"), where("from", "==", auth.currentUser.email), where("status", "==", "accepted"));
         
-        const renderFriends = (docs) => {
+        let friendsData = new Map();
+        const renderFriends = async () => {
             const list = document.getElementById('friends-list');
             list.innerHTML = "";
-            docs.forEach(data => {
+            for (const [id, data] of friendsData.entries()) {
                 const friendEmail = data.to === auth.currentUser.email ? data.from : data.to;
+                const friendName = await getUserName(friendEmail);
                 const div = document.createElement('div');
-                div.className = "card";
-                div.innerHTML = `<b>${friendEmail}</b> <button onclick="openChat('${friendEmail}')">チャットする</button>`;
+                div.className = "flex justify-between items-center bg-white dark:bg-slate-700 p-3 rounded-xl shadow-sm border dark:border-slate-600";
+                div.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-navy-100 dark:bg-slate-600 rounded-full flex items-center justify-center text-navy-600 dark:text-navy-300 font-bold text-lg">
+                            ${friendName.charAt(0).toUpperCase()}
+                        </div>
+                        <span class="font-bold dark:text-white">${friendName}</span>
+                    </div>
+                    <button class="bg-navy-100 text-navy-700 dark:bg-slate-600 dark:text-white p-2 rounded-full hover:bg-navy-200 transition" onclick="openChat('${friendEmail}', '${friendName}')">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                    </button>
+                `;
                 list.appendChild(div);
-            });
+            }
         };
-
-        // 簡易的に両方監視して統合（※FirestoreはORクエリが制限されるため分割）
-        let friendsData = new Map();
-        const updateMap = (snapshot) => {
-            snapshot.forEach(d => friendsData.set(d.id, d.data()));
-            renderFriends(Array.from(friendsData.values()));
-        };
-        onSnapshot(q1, updateMap);
-        onSnapshot(q2, updateMap);
+        onSnapshot(q1, (snap) => { snap.forEach(d => friendsData.set(d.id, d.data())); renderFriends(); });
+        onSnapshot(q2, (snap) => { snap.forEach(d => friendsData.set(d.id, d.data())); renderFriends(); });
     }
 
     // --- チャット機能 ---
-    window.openChat = (friendEmail) => {
-        document.getElementById('chat-area').classList.remove('hidden');
-        document.getElementById('chat-with-name').innerText = friendEmail + " とのチャット";
-        
-        // 2人のメアドをアルファベット順に繋げて、一意のチャットルームIDを作る
-        const emails = [auth.currentUser.email, friendEmail].sort();
-        currentChatId = emails.join("_");
+    window.openChat = (friendEmail, friendName) => {
+        document.getElementById('tab-chat').classList.remove('hidden');
+        document.getElementById('chat-with-name').innerText = friendName;
+        currentChatId = [auth.currentUser.email, friendEmail].sort().join("_");
 
-        if (unsubChat) unsubChat(); // 前のチャットの監視を解除
-        
-        const q = query(collection(db, `chatApp_chats/${currentChatId}/messages`), orderBy("timestamp", "asc"));
-        unsubChat = onSnapshot(q, (snapshot) => {
+        if (unsubChat) unsubChat();
+        unsubChat = onSnapshot(query(collection(db, `chatApp_chats/${currentChatId}/messages`), orderBy("timestamp", "asc")), (snapshot) => {
             const box = document.getElementById('chat-messages');
             box.innerHTML = "";
             snapshot.forEach(docSnap => {
                 const msg = docSnap.data();
+                const isMine = msg.sender === auth.currentUser.email;
                 const div = document.createElement('div');
-                div.className = "msg " + (msg.sender === auth.currentUser.email ? "mine" : "others");
+                div.className = `max-w-[75%] rounded-2xl p-3 relative text-sm shadow-sm ${isMine ? 'bg-navy-500 text-white ml-auto rounded-br-none' : 'bg-white dark:bg-slate-700 dark:text-white border dark:border-slate-600 mr-auto rounded-bl-none'}`;
                 div.innerText = msg.text;
                 
-                // 通報ボタン（相手のメッセージのみ）
-                if (msg.sender !== auth.currentUser.email) {
+                if (!isMine) {
                     const rBtn = document.createElement('button');
-                    rBtn.className = "report-btn";
+                    rBtn.className = "absolute -top-2 -right-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow hidden";
                     rBtn.innerText = "通報";
                     rBtn.onclick = () => reportMessage(docSnap.id, msg.text, msg.sender);
+                    div.onmouseenter = () => rBtn.classList.remove('hidden');
+                    div.onmouseleave = () => rBtn.classList.add('hidden');
                     div.appendChild(rBtn);
                 }
                 box.appendChild(div);
             });
-            box.scrollTop = box.scrollHeight; // 一番下にスクロール
+            box.scrollTop = box.scrollHeight;
         });
     };
 
     document.getElementById('send-msg-btn').addEventListener('click', async () => {
         const input = document.getElementById('chat-input');
         if (!input.value || !currentChatId) return;
-        await addDoc(collection(db, `chatApp_chats/${currentChatId}/messages`), {
-            sender: auth.currentUser.email,
-            text: input.value,
-            timestamp: serverTimestamp()
-        });
+        await addDoc(collection(db, `chatApp_chats/${currentChatId}/messages`), { sender: auth.currentUser.email, text: input.value, timestamp: serverTimestamp() });
         input.value = "";
     });
 
-    // --- 通報機能 ---
     window.reportMessage = async (msgId, text, sender) => {
-        if (!confirm("このメッセージを管理者に通報しますか？")) return;
-        await addDoc(collection(db, "chatApp_reports"), {
-            msgId, text, sender,
-            reportedBy: auth.currentUser.email,
-            timestamp: serverTimestamp()
-        });
+        if (!confirm("不適切な発言として管理者に通報しますか？")) return;
+        await addDoc(collection(db, "chatApp_reports"), { msgId, text, sender, reportedBy: auth.currentUser.email, timestamp: serverTimestamp() });
         alert("通報しました。");
     };
 
-    // === 管理者専用機能 ===
+    // --- 管理者機能 ---
     document.getElementById('send-announcement-btn').addEventListener('click', async () => {
         const text = document.getElementById('admin-announcement').value;
         if (!text) return;
         await addDoc(collection(db, "chatApp_announcements"), { text, timestamp: serverTimestamp() });
-        alert("配信しました");
+        document.getElementById('admin-announcement').value = "";
+        alert("配信完了");
     });
 
     window.toggleFreeze = async (email, currentStatus) => {
         await updateDoc(doc(db, "chatApp_users", email), { isFrozen: !currentStatus });
-        alert(`${email} を${!currentStatus ? '凍結' : '解除'}しました`);
     };
 
     function loadAdminData() {
-        // ユーザー一覧とアクティビティ・凍結管理
         onSnapshot(collection(db, "chatApp_users"), (snapshot) => {
             const list = document.getElementById('admin-users-list');
             list.innerHTML = "";
             snapshot.forEach(docSnap => {
                 const u = docSnap.data();
-                if (u.email === ADMIN_EMAIL) return; // 管理者自身は表示しない
-                const timeStr = u.lastActive ? new Date(u.lastActive.toDate()).toLocaleString() : "不明";
+                if (u.email === ADMIN_EMAIL) return;
                 const div = document.createElement('div');
-                div.className = "card";
-                div.innerHTML = `
-                    <b>${u.email}</b> (表示名: ${u.name})<br>
-                    <small>最終アクセス: ${timeStr}</small><br>
-                    <button class="${u.isFrozen ? '' : 'danger-btn'}" onclick="toggleFreeze('${u.email}', ${u.isFrozen})">
-                        ${u.isFrozen ? '凍結解除する' : '凍結する'}
-                    </button>
-                `;
+                div.className = "flex justify-between items-center bg-gray-50 dark:bg-slate-800 p-2 rounded border dark:border-slate-600 mb-2";
+                div.innerHTML = `<div><p class="font-bold dark:text-white">${u.name}</p><p class="text-xs text-gray-500">${u.email}</p></div>
+                    <button class="px-3 py-1 rounded text-white text-xs ${u.isFrozen ? 'bg-gray-500' : 'bg-red-500'}" onclick="toggleFreeze('${u.email}', ${u.isFrozen})">${u.isFrozen ? '凍結解除' : '凍結する'}</button>`;
                 list.appendChild(div);
             });
         });
 
-        // 通報一覧
         onSnapshot(collection(db, "chatApp_reports"), (snapshot) => {
             const list = document.getElementById('admin-reports-list');
             list.innerHTML = "";
             snapshot.forEach(docSnap => {
                 const r = docSnap.data();
                 const div = document.createElement('div');
-                div.className = "card";
-                div.innerHTML = `
-                    <b>通報者:</b> ${r.reportedBy}<br>
-                    <b>対象者:</b> ${r.sender}<br>
-                    <b>内容:</b> <span style="color:red;">${r.text}</span>
-                `;
+                div.className = "bg-gray-50 dark:bg-slate-800 p-2 rounded border border-red-200 dark:border-red-900 mb-2";
+                div.innerHTML = `<p class="text-xs text-gray-500">通報者: ${r.reportedBy} 👉 対象: ${r.sender}</p><p class="font-bold text-red-600 dark:text-red-400 mt-1">${r.text}</p>`;
                 list.appendChild(div);
             });
         });
