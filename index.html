@@ -335,29 +335,6 @@
 
     document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
-    // --- プロフィール・設定 ---
-    if (userSnap.exists()) {
-                    currentUserData = userSnap.data();
-                    if (currentUserData.isFrozen) {
-                        alert("アカウントが凍結されています。");
-                        await signOut(auth); return;
-                    }
-                    // 古いアカウントにフレンドIDがない場合は自動で付与
-                    if (!currentUserData.friendId) {
-                        currentUserData.friendId = "user_" + Math.random().toString(36).substring(2, 8);
-                    }
-                    await updateDoc(userRef, { lastActive: serverTimestamp(), friendId: currentUserData.friendId });
-                } else {
-                    // 新規登録時にランダムなフレンドIDを生成
-                    const randomId = "user_" + Math.random().toString(36).substring(2, 8);
-                    currentUserData = { email: user.email, name: user.email.split('@')[0], friendId: randomId, isFrozen: false, searchable: true, lastActive: serverTimestamp() };
-                    await setDoc(userRef, currentUserData);
-                }
-
-                document.getElementById('user-display-name').innerText = currentUserData.name;
-                document.getElementById('profile-name').value = currentUserData.name;
-                document.getElementById('profile-friend-id').value = currentUserData.friendId;
-
     // ダークモード切替処理
     document.getElementById('theme-toggle').addEventListener('click', () => {
         const isDark = document.documentElement.classList.toggle('dark');
