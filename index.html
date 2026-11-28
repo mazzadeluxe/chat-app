@@ -29,6 +29,14 @@
 <body class="bg-navy-50 text-gray-800 dark:bg-slate-900 dark:text-gray-100 transition-colors duration-300 font-sans">
 
 <div id="app" class="max-w-4xl mx-auto bg-white dark:bg-slate-800 min-h-screen shadow-2xl flex flex-col relative overflow-hidden transition-colors duration-300">
+
+    <!-- パスコード入力画面 (一番上に被さる) -->
+    <div id="lock-screen" class="hidden absolute inset-0 bg-white dark:bg-slate-900 z-50 flex flex-col items-center justify-center p-8 transition-colors duration-300">
+        <svg class="w-16 h-16 text-navy-600 dark:text-navy-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+        <h2 class="text-2xl font-bold text-navy-800 dark:text-white mb-6">パスコードを入力</h2>
+        <input type="password" id="verify-passcode" placeholder="4桁の数字" maxlength="4" class="w-48 text-center text-2xl tracking-widest p-4 rounded-2xl border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-800 focus:outline-none focus:border-navy-500 mb-4">
+        <p id="lock-error" class="text-red-500 text-sm hidden font-bold">パスコードが違います</p>
+    </div>
     
     <!-- お知らせバー -->
     <div id="announcement-bar" class="hidden bg-yellow-400 text-yellow-900 font-bold p-3 text-center text-sm shadow-md z-20 relative"></div>
@@ -82,7 +90,7 @@
                 <div class="bg-blue-50 dark:bg-slate-700 p-4 rounded-2xl shadow-sm border border-blue-100 dark:border-slate-600">
                     <h3 class="text-sm font-bold text-navy-800 dark:text-blue-300 mb-2">フレンド追加</h3>
                     <div class="flex gap-2">
-                        <input type="email" id="friend-email" placeholder="相手のメールアドレス" class="flex-1 p-3 text-sm rounded-xl border border-gray-300 dark:border-slate-600 dark:bg-slate-800 focus:outline-none focus:border-navy-500">
+                        <input type="text" id="friend-search-id" placeholder="相手のフレンドIDを入力" class="flex-1 p-3 text-sm rounded-xl border border-gray-300 dark:border-slate-600 dark:bg-slate-800 focus:outline-none focus:border-navy-500">
                         <button id="send-request-btn" class="bg-navy-600 hover:bg-navy-700 text-white px-4 rounded-xl shadow transition whitespace-nowrap">申請</button>
                     </div>
                 </div>
@@ -120,9 +128,12 @@
             <!-- プロフィールタブ -->
             <div id="tab-profile" class="hidden space-y-4">
                 <div class="bg-white dark:bg-slate-700 p-5 rounded-2xl shadow-sm border dark:border-slate-600">
-                    <h3 class="text-sm font-bold text-gray-500 dark:text-gray-300 mb-4">表示名の変更</h3>
-                    <input type="text" id="profile-name" placeholder="新しい表示名" class="w-full p-4 mb-4 border rounded-xl dark:bg-slate-800 dark:border-slate-600 focus:outline-none focus:border-navy-500">
-                    <button id="update-profile-btn" class="w-full py-3 bg-navy-600 text-white font-bold rounded-xl shadow hover:bg-navy-700 transition">更新する</button>
+                    <h3 class="text-sm font-bold text-gray-500 dark:text-gray-300 mb-4">プロフィールの変更</h3>
+                    <label class="text-xs font-bold text-gray-500 dark:text-gray-400">表示名</label>
+                    <input type="text" id="profile-name" placeholder="新しい表示名" class="w-full p-3 mb-4 border rounded-xl dark:bg-slate-800 dark:border-slate-600 focus:outline-none focus:border-navy-500">
+                    <label class="text-xs font-bold text-gray-500 dark:text-gray-400">あなたのフレンドID (半角英数字とアンダーバーのみ)</label>
+                    <input type="text" id="profile-friend-id" placeholder="例: my_name_123" class="w-full p-3 mb-4 border rounded-xl dark:bg-slate-800 dark:border-slate-600 focus:outline-none focus:border-navy-500">
+                    <button id="update-profile-btn" class="w-full py-3 bg-navy-600 text-white font-bold rounded-xl shadow hover:bg-navy-700 transition">プロフィールを更新</button>
                 </div>
             </div>
 
@@ -152,6 +163,18 @@
                         <button id="search-toggle" class="w-12 h-6 rounded-full bg-navy-500 relative transition-colors duration-300">
                             <div id="search-knob" class="w-5 h-5 bg-white rounded-full absolute top-0.5 left-1 shadow transition-transform duration-300 transform translate-x-5"></div>
                         </button>
+                    </div>
+
+                    <hr class="dark:border-slate-600">
+
+                    <!-- パスコード設定 -->
+                    <div>
+                        <p class="font-bold dark:text-white mb-2">🔒 パスコードロック (この端末のみ)</p>
+                        <div class="flex gap-2">
+                            <input type="password" id="setup-passcode" placeholder="4桁の数字" maxlength="4" class="flex-1 p-3 rounded-xl border border-gray-300 dark:bg-slate-800 dark:border-slate-600 focus:outline-none focus:border-navy-500">
+                            <button id="save-passcode-btn" class="bg-navy-600 hover:bg-navy-700 transition text-white px-4 rounded-xl shadow font-bold">設定</button>
+                            <button id="clear-passcode-btn" class="bg-gray-400 hover:bg-gray-500 transition text-white px-4 rounded-xl shadow hidden font-bold">解除</button>
+                        </div>
                     </div>
 
                     <hr class="dark:border-slate-600">
@@ -254,15 +277,21 @@
                         alert("アカウントが凍結されています。");
                         await signOut(auth); return;
                     }
-                    await updateDoc(userRef, { lastActive: serverTimestamp() });
+                    // 古いアカウントにフレンドIDがない場合は自動で付与
+                    if (!currentUserData.friendId) {
+                        currentUserData.friendId = "user_" + Math.random().toString(36).substring(2, 8);
+                    }
+                    await updateDoc(userRef, { lastActive: serverTimestamp(), friendId: currentUserData.friendId });
                 } else {
-                    // searchable: true（デフォルトは検索許可）
-                    currentUserData = { email: user.email, name: user.email.split('@')[0], isFrozen: false, searchable: true, lastActive: serverTimestamp() };
+                    // 新規登録時にランダムなフレンドIDを生成
+                    const randomId = "user_" + Math.random().toString(36).substring(2, 8);
+                    currentUserData = { email: user.email, name: user.email.split('@')[0], friendId: randomId, isFrozen: false, searchable: true, lastActive: serverTimestamp() };
                     await setDoc(userRef, currentUserData);
                 }
 
                 document.getElementById('user-display-name').innerText = currentUserData.name;
                 document.getElementById('profile-name').value = currentUserData.name;
+                document.getElementById('profile-friend-id').value = currentUserData.friendId;
                 
                 // 検索拒否スイッチの初期化
                 updateSearchToggleUI(currentUserData.searchable !== false);
@@ -307,13 +336,27 @@
     document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
     // --- プロフィール・設定 ---
-    document.getElementById('update-profile-btn').addEventListener('click', async () => {
-        const newName = document.getElementById('profile-name').value;
-        if (!newName) return;
-        await updateDoc(doc(db, "chatApp_users", auth.currentUser.email), { name: newName });
-        document.getElementById('user-display-name').innerText = newName;
-        alert("更新しました！");
-    });
+    if (userSnap.exists()) {
+                    currentUserData = userSnap.data();
+                    if (currentUserData.isFrozen) {
+                        alert("アカウントが凍結されています。");
+                        await signOut(auth); return;
+                    }
+                    // 古いアカウントにフレンドIDがない場合は自動で付与
+                    if (!currentUserData.friendId) {
+                        currentUserData.friendId = "user_" + Math.random().toString(36).substring(2, 8);
+                    }
+                    await updateDoc(userRef, { lastActive: serverTimestamp(), friendId: currentUserData.friendId });
+                } else {
+                    // 新規登録時にランダムなフレンドIDを生成
+                    const randomId = "user_" + Math.random().toString(36).substring(2, 8);
+                    currentUserData = { email: user.email, name: user.email.split('@')[0], friendId: randomId, isFrozen: false, searchable: true, lastActive: serverTimestamp() };
+                    await setDoc(userRef, currentUserData);
+                }
+
+                document.getElementById('user-display-name').innerText = currentUserData.name;
+                document.getElementById('profile-name').value = currentUserData.name;
+                document.getElementById('profile-friend-id').value = currentUserData.friendId;
 
     // ダークモード切替処理
     document.getElementById('theme-toggle').addEventListener('click', () => {
@@ -353,17 +396,32 @@
 
     // --- フレンド機能 ---
     document.getElementById('send-request-btn').addEventListener('click', async () => {
-        const toEmail = document.getElementById('friend-email').value;
-        if (!toEmail || toEmail === auth.currentUser.email) return;
+        const toId = document.getElementById('friend-search-id').value.trim();
+        if (!toId) return;
+        if (toId === currentUserData.friendId) return alert("自分には送れません");
+        
         try {
-            const targetSnap = await getDoc(doc(db, "chatApp_users", toEmail));
-            // 相手が存在しないか、検索拒否（searchable: false）の場合は弾く
-            if (!targetSnap.exists() || targetSnap.data().searchable === false) {
-                return alert("ユーザーが見つからないか、相手が検索を許可していません。");
+            // フレンドIDからユーザーを探す
+            const q = query(collection(db, "chatApp_users"), where("friendId", "==", toId));
+            const snap = await getDocs(q);
+            
+            if (snap.empty) {
+                return alert("そのフレンドIDのユーザーは見つかりません。");
             }
-            await addDoc(collection(db, "chatApp_friendRequests"), { from: auth.currentUser.email, to: toEmail, status: 'pending', timestamp: serverTimestamp() });
-            alert("申請を送りました！");
-            document.getElementById('friend-email').value = "";
+            
+            const targetData = snap.docs[0].data();
+            if (targetData.searchable === false) {
+                return alert("相手が検索を許可していません。");
+            }
+            
+            await addDoc(collection(db, "chatApp_friendRequests"), { 
+                from: auth.currentUser.email, 
+                to: targetData.email, // 裏側では確実なメアドを使って管理
+                status: 'pending', 
+                timestamp: serverTimestamp() 
+            });
+            alert("フレンド申請を送りました！");
+            document.getElementById('friend-search-id').value = "";
         } catch(e) { alert("エラー: " + e.message); }
     });
 
@@ -502,6 +560,61 @@
             });
         });
     }
+
+    // --- パスコード機能 ---
+    const localPasscode = localStorage.getItem('app_passcode');
+    const lockScreen = document.getElementById('lock-screen');
+    const verifyInput = document.getElementById('verify-passcode');
+    const setupInput = document.getElementById('setup-passcode');
+    const savePassBtn = document.getElementById('save-passcode-btn');
+    const clearPassBtn = document.getElementById('clear-passcode-btn');
+
+    // 起動時のロック画面表示
+    if (localPasscode) {
+        lockScreen.classList.remove('hidden');
+        clearPassBtn.classList.remove('hidden');
+        savePassBtn.classList.add('hidden');
+        setupInput.value = "●●●●";
+        setupInput.disabled = true;
+    }
+
+    // ロック解除
+    verifyInput.addEventListener('input', (e) => {
+        if (e.target.value.length === 4) {
+            if (e.target.value === localStorage.getItem('app_passcode')) {
+                lockScreen.classList.add('hidden');
+                e.target.value = "";
+                document.getElementById('lock-error').classList.add('hidden');
+            } else {
+                document.getElementById('lock-error').classList.remove('hidden');
+                e.target.value = "";
+            }
+        }
+    });
+
+    // パスコードの設定
+    savePassBtn.addEventListener('click', () => {
+        const val = setupInput.value;
+        if (val.length !== 4 || !/^\d{4}$/.test(val)) return alert("4桁の数字を入力してください");
+        localStorage.setItem('app_passcode', val);
+        alert("パスコードを設定しました。次回から起動時に要求されます。");
+        setupInput.value = "●●●●";
+        setupInput.disabled = true;
+        savePassBtn.classList.add('hidden');
+        clearPassBtn.classList.remove('hidden');
+    });
+
+    // パスコードの解除
+    clearPassBtn.addEventListener('click', () => {
+        if(confirm("パスコードロックを解除しますか？")) {
+            localStorage.removeItem('app_passcode');
+            setupInput.value = "";
+            setupInput.disabled = false;
+            savePassBtn.classList.remove('hidden');
+            clearPassBtn.classList.add('hidden');
+            alert("パスコードを解除しました。");
+        }
+    });
 </script>
 </body>
 </html>
