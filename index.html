@@ -24,6 +24,17 @@
         ::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
         .dark ::-webkit-scrollbar-thumb { background-color: #475569; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
+
+        /* トークルーム用の背景パターン */
+        .bg-pattern-dots {
+            background-image: radial-gradient(rgba(148, 163, 184, 0.35) 1.5px, transparent 1.5px);
+            background-size: 18px 18px;
+        }
+        .bg-pattern-grid {
+            background-image: linear-gradient(to right, rgba(148, 163, 184, 0.2) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(148, 163, 184, 0.2) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
     </style>
 </head>
 <body class="bg-navy-50 text-gray-800 dark:bg-slate-900 dark:text-gray-100 transition-colors duration-300 font-sans">
@@ -117,10 +128,10 @@
                     <h3 id="chat-with-name" class="font-bold text-lg truncate"></h3>
                 </header>
                 <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-slate-900"></div>
-                <div class="p-3 bg-white dark:bg-slate-800 border-t dark:border-slate-700 flex gap-2">
-                    <input type="text" id="chat-input" placeholder="メッセージ..." class="flex-1 p-3 rounded-full border border-gray-300 dark:border-slate-600 dark:bg-slate-700 focus:outline-none focus:border-navy-500">
-                    <button id="send-msg-btn" class="bg-navy-600 text-white p-3 rounded-full shadow hover:bg-navy-700 transition">
-                        <svg class="w-6 h-6 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                <div class="p-3 bg-white dark:bg-slate-800 border-t dark:border-slate-700 flex items-end gap-2">
+                    <textarea id="chat-input" rows="1" placeholder="メッセージ..." class="flex-1 p-3 rounded-2xl border border-gray-300 dark:border-slate-600 dark:bg-slate-700 focus:outline-none focus:border-navy-500 resize-none max-h-32 overflow-y-auto"></textarea>
+                    <button id="send-msg-btn" class="bg-navy-600 text-white p-3 rounded-full shadow hover:bg-navy-700 transition flex-shrink-0">
+                        <svg class="w-6 h-6 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
                     </button>
                 </div>
             </div>
@@ -165,6 +176,50 @@
 
                     <hr class="dark:border-slate-600">
 
+                    <!-- トークルームの背景変更 -->
+                    <div>
+                        <p class="font-bold dark:text-white mb-1">🎨 トークルームの背景</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">チャット画面の背景デザインを選びます</p>
+                        <div id="bg-selector" class="grid grid-cols-3 gap-2 text-xs font-bold">
+                            <button type="button" data-bg="default" class="bg-opt p-2.5 rounded-xl border border-gray-300 dark:border-slate-500 bg-gray-50 dark:bg-slate-800 transition">シンプル</button>
+                            <button type="button" data-bg="sky" class="bg-opt p-2.5 rounded-xl border border-sky-300 bg-sky-100 text-sky-900 transition">スカイ</button>
+                            <button type="button" data-bg="pink" class="bg-opt p-2.5 rounded-xl border border-pink-300 bg-pink-100 text-pink-900 transition">さくら</button>
+                            <button type="button" data-bg="mint" class="bg-opt p-2.5 rounded-xl border border-emerald-300 bg-emerald-100 text-emerald-900 transition">ミント</button>
+                            <button type="button" data-bg="dots" class="bg-opt p-2.5 rounded-xl border border-indigo-300 bg-indigo-50 text-indigo-900 bg-pattern-dots transition">ドット柄</button>
+                            <button type="button" data-bg="grid" class="bg-opt p-2.5 rounded-xl border border-amber-300 bg-amber-50 text-amber-900 bg-pattern-grid transition">方眼ノート</button>
+                        </div>
+                    </div>
+
+                    <hr class="dark:border-slate-600">
+
+                    <!-- 文字サイズ変更 -->
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="font-bold dark:text-white">🔠 文字サイズ</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">画面全体の文字の大きさ</p>
+                        </div>
+                        <div class="flex bg-gray-100 dark:bg-slate-800 p-1 rounded-xl border dark:border-slate-600">
+                            <button type="button" data-size="small" class="size-opt px-3 py-1 rounded-lg text-xs font-bold transition">小</button>
+                            <button type="button" data-size="medium" class="size-opt px-3 py-1 rounded-lg text-xs font-bold transition">中</button>
+                            <button type="button" data-size="large" class="size-opt px-3 py-1 rounded-lg text-xs font-bold transition">大</button>
+                        </div>
+                    </div>
+
+                    <hr class="dark:border-slate-600">
+
+                    <!-- Enterキー送信の切り替え -->
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="font-bold dark:text-white">⌨️ Enterキーで送信</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">オフにするとEnterで改行します</p>
+                        </div>
+                        <button id="enter-send-toggle" class="w-12 h-6 rounded-full bg-navy-500 relative transition-colors duration-300">
+                            <div id="enter-send-knob" class="w-5 h-5 bg-white rounded-full absolute top-0.5 left-1 shadow transition-transform duration-300 transform translate-x-5"></div>
+                        </button>
+                    </div>
+
+                    <hr class="dark:border-slate-600">
+                    
                     <!-- 検索拒否機能 -->
                     <div class="flex items-center justify-between">
                         <div>
@@ -604,7 +659,7 @@
 
                 // メッセージ吹き出し本体
                 const bubble = document.createElement('div');
-                bubble.className = `max-w-[75%] md:max-w-md rounded-2xl p-3 text-sm shadow-sm break-words ${isMine ? 'bg-navy-500 text-white rounded-br-none' : 'bg-white dark:bg-slate-700 dark:text-white border dark:border-slate-600 rounded-bl-none'}`;
+                bubble.className = `max-w-[75%] md:max-w-md rounded-2xl p-3 text-sm shadow-sm break-words whitespace-pre-wrap ${isMine ? 'bg-navy-500 text-white rounded-br-none' : 'bg-white dark:bg-slate-700 dark:text-white border dark:border-slate-600 rounded-bl-none'}`;
                 bubble.textContent = msg.text;
                 wrapper.appendChild(bubble);
 
@@ -841,6 +896,110 @@
 
     window.addEventListener("beforeunload", () => {
         setOnlineStatus(false);
+    });
+
+    // --- フェーズ4：トーク背景・文字サイズ・Enter送信設定 ---
+
+    // 1. トークルーム背景の適用と保存
+    const BG_STYLES = {
+        default: 'bg-gray-50 dark:bg-slate-900',
+        sky: 'bg-sky-100 dark:bg-sky-950',
+        pink: 'bg-pink-100 dark:bg-pink-950',
+        mint: 'bg-emerald-100 dark:bg-emerald-950',
+        dots: 'bg-indigo-50 dark:bg-slate-900 bg-pattern-dots',
+        grid: 'bg-amber-50 dark:bg-slate-900 bg-pattern-grid'
+    };
+
+    function applyChatBackground(bgKey) {
+        const key = BG_STYLES[bgKey] ? bgKey : 'default';
+        const chatBox = document.getElementById('chat-messages');
+        chatBox.className = `flex-1 overflow-y-auto p-4 space-y-4 transition-colors duration-300 ${BG_STYLES[key]}`;
+        localStorage.setItem('chat_bg', key);
+
+        // 選択中のボタンに枠線をつける
+        document.querySelectorAll('.bg-opt').forEach(btn => {
+            if (btn.dataset.bg === key) {
+                btn.classList.add('ring-2', 'ring-navy-600', 'scale-105');
+            } else {
+                btn.classList.remove('ring-2', 'ring-navy-600', 'scale-105');
+            }
+        });
+    }
+
+    document.querySelectorAll('.bg-opt').forEach(btn => {
+        btn.addEventListener('click', () => applyChatBackground(btn.dataset.bg));
+    });
+    applyChatBackground(localStorage.getItem('chat_bg') || 'default');
+
+    // 2. 文字サイズの適用と保存
+    const FONT_SIZES = { small: '14px', medium: '16px', large: '19px' };
+
+    function applyFontSize(sizeKey) {
+        const key = FONT_SIZES[sizeKey] ? sizeKey : 'medium';
+        document.documentElement.style.fontSize = FONT_SIZES[key];
+        localStorage.setItem('app_font_size', key);
+
+        document.querySelectorAll('.size-opt').forEach(btn => {
+            if (btn.dataset.size === key) {
+                btn.classList.add('bg-navy-600', 'text-white', 'shadow');
+            } else {
+                btn.classList.remove('bg-navy-600', 'text-white', 'shadow');
+            }
+        });
+    }
+
+    document.querySelectorAll('.size-opt').forEach(btn => {
+        btn.addEventListener('click', () => applyFontSize(btn.dataset.size));
+    });
+    applyFontSize(localStorage.getItem('app_font_size') || 'medium');
+
+    // 3. Enterキー送信の切り替えと入力欄制御
+    let isEnterToSend = localStorage.getItem('enter_to_send') !== 'false'; // 初期値はオン
+
+    function updateEnterToggleUI() {
+        const knob = document.getElementById('enter-send-knob');
+        const bg = document.getElementById('enter-send-toggle');
+        const chatInput = document.getElementById('chat-input');
+        if (isEnterToSend) {
+            knob.classList.add('translate-x-5');
+            bg.classList.add('bg-navy-500');
+            bg.classList.remove('bg-gray-300');
+            chatInput.placeholder = "メッセージ... (Enterで送信 / Shift+Enterで改行)";
+        } else {
+            knob.classList.remove('translate-x-5');
+            bg.classList.remove('bg-navy-500');
+            bg.classList.add('bg-gray-300');
+            chatInput.placeholder = "メッセージ... (Enterで改行 / 右のボタンで送信)";
+        }
+    }
+
+    document.getElementById('enter-send-toggle').addEventListener('click', () => {
+        isEnterToSend = !isEnterToSend;
+        localStorage.setItem('enter_to_send', isEnterToSend);
+        updateEnterToggleUI();
+    });
+    updateEnterToggleUI();
+
+    // キー入力と自動高さ調整
+    const chatTextarea = document.getElementById('chat-input');
+    chatTextarea.addEventListener('keydown', (e) => {
+        if (e.isComposing) return; // 日本語変換中のEnterは無視する
+        if (e.key === 'Enter') {
+            if (isEnterToSend && !e.shiftKey) {
+                e.preventDefault();
+                document.getElementById('send-msg-btn').click();
+            }
+        }
+    });
+
+    chatTextarea.addEventListener('input', () => {
+        chatTextarea.style.height = 'auto';
+        chatTextarea.style.height = Math.min(chatTextarea.scrollHeight, 128) + 'px';
+    });
+
+    // 送信ボタンクリック時にテキストエリアの高さも元に戻す
+    document.getElementById('send-msg-btn').addEventListener('click', () => {
+        setTimeout(() => { chatTextarea.style.height = 'auto'; }, 50);
     });
 </script>
 </body>
