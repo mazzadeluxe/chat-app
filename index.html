@@ -218,7 +218,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, collection, doc, setDoc, getDoc, getDocs, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, doc, setDoc, getDoc, getDocs, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, updateDoc, deleteDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     // ダークモードの初期化（localStorageから復元）
     if(localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark');
@@ -538,7 +538,9 @@
         onSnapshot(q2, (snap) => { snap.forEach(d => friendsData.set(d.id, d.data())); window.triggerRenderFriends(); });
     }
 
-    // --- チャット機能 ---
+    // --- チャット機能（フェーズ3：既読・編集・削除・リアクション対応） ---
+    const REACTION_EMOJIS = ['👍', '❤️', '😀', '😂', '😮', '🙏'];
+
     window.openChat = (friendEmail, friendName) => {
         document.getElementById('tab-chat').classList.remove('hidden');
         document.getElementById('chat-with-name').innerText = friendName;
@@ -548,32 +550,149 @@
         unsubChat = onSnapshot(query(collection(db, `chatApp_chats/${currentChatId}/messages`), orderBy("timestamp", "asc")), (snapshot) => {
             const box = document.getElementById('chat-messages');
             box.innerHTML = "";
+            const isChatOpen = !document.getElementById('tab-chat').classList.contains('hidden');
+
             snapshot.forEach(docSnap => {
                 const msg = docSnap.data();
+                const msgId = docSnap.id;
                 const isMine = msg.sender === auth.currentUser.email;
-                const div = document.createElement('div');
-                div.className = `max-w-[75%] md:max-w-md rounded-2xl p-3 relative text-sm shadow-sm ${isMine ? 'bg-navy-500 text-white ml-auto rounded-br-none' : 'bg-white dark:bg-slate-700 dark:text-white border dark:border-slate-600 mr-auto rounded-bl-none'}`;
-                div.innerText = msg.text;
-                
-                if (!isMine) {
-                    const rBtn = document.createElement('button');
-                    rBtn.className = "absolute -top-2 -right-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow hidden";
-                    rBtn.innerText = "通報";
-                    rBtn.onclick = () => reportMessage(docSnap.id, msg.text, msg.sender);
-                    div.onmouseenter = () => rBtn.classList.remove('hidden');
-                    div.onmouseleave = () => rBtn.classList.add('hidden');
-                    div.appendChild(rBtn);
+
+                // 【既読処理】相手からの未読メッセージを画面表示中に既読へ更新
+                if (!isMine && !msg.isRead && isChatOpen) {
+                    updateDoc(doc(db, `chatApp_chats/${currentChatId}/messages`, msgId), { isRead: true }).catch(() => {});
                 }
-                box.appendChild(div);
+
+                // メッセージ全体のラッパー（ホバー検知用）
+                const wrapper = document.createElement('div');
+                wrapper.className = `group flex flex-col relative ${isMine ? 'items-end' : 'items-start'}`;
+
+                // ホバー時に浮かび上がるアクションバー（リアクション・編集・削除・通報）
+                const actionBar = document.createElement('div');
+                actionBar.className = `hidden group-hover:flex items-center gap-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-full px-2 py-1 shadow-lg mb-1 z-10`;
+
+                REACTION_EMOJIS.forEach(emoji => {
+                    const eBtn = document.createElement('button');
+                    eBtn.className = "hover:scale-125 transition text-sm px-0.5";
+                    eBtn.innerText = emoji;
+                    eBtn.onclick = () => toggleReaction(msgId, emoji, msg.reactions || {});
+                    actionBar.appendChild(eBtn);
+                });
+
+                if (isMine) {
+                    // 編集ボタン
+                    const editBtn = document.createElement('button');
+                    editBtn.className = "text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700 px-1.5 py-0.5 rounded-full font-bold ml-1";
+                    editBtn.innerText = "編集";
+                    editBtn.onclick = () => editMessage(msgId, msg.text);
+                    actionBar.appendChild(editBtn);
+
+                    // 削除（送信取り消し）ボタン
+                    const delBtn = document.createElement('button');
+                    delBtn.className = "text-xs text-red-500 hover:bg-red-50 dark:hover:bg-slate-700 px-1.5 py-0.5 rounded-full font-bold";
+                    delBtn.innerText = "削除";
+                    delBtn.onclick = () => deleteMessage(msgId);
+                    actionBar.appendChild(delBtn);
+                } else {
+                    // 通報ボタン
+                    const rBtn = document.createElement('button');
+                    rBtn.className = "text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-full ml-1 hover:bg-red-600";
+                    rBtn.innerText = "通報";
+                    rBtn.onclick = () => reportMessage(msgId, msg.text, msg.sender);
+                    actionBar.appendChild(rBtn);
+                }
+                wrapper.appendChild(actionBar);
+
+                // メッセージ吹き出し本体
+                const bubble = document.createElement('div');
+                bubble.className = `max-w-[75%] md:max-w-md rounded-2xl p-3 text-sm shadow-sm break-words ${isMine ? 'bg-navy-500 text-white rounded-br-none' : 'bg-white dark:bg-slate-700 dark:text-white border dark:border-slate-600 rounded-bl-none'}`;
+                bubble.textContent = msg.text;
+                wrapper.appendChild(bubble);
+
+                // リアクションバッジ表示エリア
+                const reactions = msg.reactions || {};
+                const reactionKeys = Object.keys(reactions).filter(k => Array.isArray(reactions[k]) && reactions[k].length > 0);
+                if (reactionKeys.length > 0) {
+                    const rContainer = document.createElement('div');
+                    rContainer.className = "flex flex-wrap gap-1 mt-1";
+                    reactionKeys.forEach(emoji => {
+                        const users = reactions[emoji];
+                        const hasReacted = users.includes(auth.currentUser.email);
+                        const badge = document.createElement('button');
+                        badge.className = `text-xs px-2 py-0.5 rounded-full border flex items-center gap-1 transition ${hasReacted ? 'bg-blue-100 border-blue-400 text-navy-800 dark:bg-navy-900 dark:border-blue-500 dark:text-blue-200 font-bold' : 'bg-white border-gray-200 text-gray-600 dark:bg-slate-800 dark:border-slate-600 dark:text-gray-300'}`;
+                        badge.textContent = `${emoji} ${users.length}`;
+                        badge.onclick = () => toggleReaction(msgId, emoji, reactions);
+                        rContainer.appendChild(badge);
+                    });
+                    wrapper.appendChild(rContainer);
+                }
+
+                // ステータス行（時刻・編集済み・既読マーク）
+                const meta = document.createElement('div');
+                meta.className = "text-[10px] text-gray-400 mt-0.5 flex items-center gap-1.5 px-1";
+                if (isMine && msg.isRead) {
+                    const readSpan = document.createElement('span');
+                    readSpan.className = "text-navy-600 dark:text-blue-400 font-bold";
+                    readSpan.textContent = "既読";
+                    meta.appendChild(readSpan);
+                }
+                if (msg.isEdited) {
+                    const editSpan = document.createElement('span');
+                    editSpan.textContent = "(編集済み)";
+                    meta.appendChild(editSpan);
+                }
+                if (msg.timestamp) {
+                    const timeSpan = document.createElement('span');
+                    timeSpan.textContent = new Date(msg.timestamp.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    meta.appendChild(timeSpan);
+                }
+                wrapper.appendChild(meta);
+
+                box.appendChild(wrapper);
             });
             box.scrollTop = box.scrollHeight;
         });
     };
 
+    // リアクションの追加・取り消し
+    window.toggleReaction = async (msgId, emoji, currentReactions) => {
+        if (!currentChatId) return;
+        const msgRef = doc(db, `chatApp_chats/${currentChatId}/messages`, msgId);
+        const users = currentReactions[emoji] || [];
+        const hasReacted = users.includes(auth.currentUser.email);
+        await updateDoc(msgRef, {
+            [`reactions.${emoji}`]: hasReacted ? arrayRemove(auth.currentUser.email) : arrayUnion(auth.currentUser.email)
+        });
+    };
+
+    // メッセージの編集
+    window.editMessage = async (msgId, oldText) => {
+        const newText = prompt("メッセージを編集:", oldText);
+        if (newText === null) return; // キャンセル時
+        const trimmed = newText.trim();
+        if (!trimmed || trimmed === oldText) return;
+        await updateDoc(doc(db, `chatApp_chats/${currentChatId}/messages`, msgId), {
+            text: trimmed,
+            isEdited: true
+        });
+    };
+
+    // メッセージの送信取り消し（削除）
+    window.deleteMessage = async (msgId) => {
+        if (!confirm("このメッセージの送信を取り消しますか？")) return;
+        await deleteDoc(doc(db, `chatApp_chats/${currentChatId}/messages`, msgId));
+    };
+
     document.getElementById('send-msg-btn').addEventListener('click', async () => {
         const input = document.getElementById('chat-input');
-        if (!input.value || !currentChatId) return;
-        await addDoc(collection(db, `chatApp_chats/${currentChatId}/messages`), { sender: auth.currentUser.email, text: input.value, timestamp: serverTimestamp() });
+        if (!input.value.trim() || !currentChatId) return;
+        await addDoc(collection(db, `chatApp_chats/${currentChatId}/messages`), {
+            sender: auth.currentUser.email,
+            text: input.value.trim(),
+            timestamp: serverTimestamp(),
+            isRead: false,
+            isEdited: false,
+            reactions: {}
+        });
         input.value = "";
     });
 
