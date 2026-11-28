@@ -129,10 +129,21 @@
             <div id="tab-profile" class="hidden space-y-4">
                 <div class="bg-white dark:bg-slate-700 p-5 rounded-2xl shadow-sm border dark:border-slate-600">
                     <h3 class="text-sm font-bold text-gray-500 dark:text-gray-300 mb-4">プロフィールの変更</h3>
+                    
+                    <label class="text-xs font-bold text-gray-500 dark:text-gray-400">プロフィールアイコン</label>
+                    <div id="emoji-selector" class="flex flex-wrap gap-2 mb-4 p-3 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-600 h-32 overflow-y-auto">
+                        <!-- JSで絵文字を並べます -->
+                    </div>
+                    
                     <label class="text-xs font-bold text-gray-500 dark:text-gray-400">表示名</label>
                     <input type="text" id="profile-name" placeholder="新しい表示名" class="w-full p-3 mb-4 border rounded-xl dark:bg-slate-800 dark:border-slate-600 focus:outline-none focus:border-navy-500">
-                    <label class="text-xs font-bold text-gray-500 dark:text-gray-400">あなたのフレンドID (半角英数字とアンダーバーのみ)</label>
+                    
+                    <label class="text-xs font-bold text-gray-500 dark:text-gray-400">ひとことメッセージ (最大20文字)</label>
+                    <input type="text" id="profile-status" placeholder="例: いま勉強中！" maxlength="20" class="w-full p-3 mb-4 border rounded-xl dark:bg-slate-800 dark:border-slate-600 focus:outline-none focus:border-navy-500">
+
+                    <label class="text-xs font-bold text-gray-500 dark:text-gray-400">あなたのフレンドID (半角英数字と_のみ)</label>
                     <input type="text" id="profile-friend-id" placeholder="例: my_name_123" class="w-full p-3 mb-4 border rounded-xl dark:bg-slate-800 dark:border-slate-600 focus:outline-none focus:border-navy-500">
+                    
                     <button id="update-profile-btn" class="w-full py-3 bg-navy-600 text-white font-bold rounded-xl shadow hover:bg-navy-700 transition">プロフィールを更新</button>
                 </div>
             </div>
@@ -277,21 +288,26 @@
                         alert("アカウントが凍結されています。");
                         await signOut(auth); return;
                     }
-                    // 古いアカウントにフレンドIDがない場合は自動で付与
                     if (!currentUserData.friendId) {
                         currentUserData.friendId = "user_" + Math.random().toString(36).substring(2, 8);
                     }
-                    await updateDoc(userRef, { lastActive: serverTimestamp(), friendId: currentUserData.friendId });
+                    // ログイン時にオンライン状態をTrueにする
+                    await updateDoc(userRef, { lastActive: serverTimestamp(), isOnline: true, friendId: currentUserData.friendId });
                 } else {
-                    // 新規登録時にランダムなフレンドIDを生成
                     const randomId = "user_" + Math.random().toString(36).substring(2, 8);
-                    currentUserData = { email: user.email, name: user.email.split('@')[0], friendId: randomId, isFrozen: false, searchable: true, lastActive: serverTimestamp() };
+                    // 初期アイコンは😊を設定
+                    currentUserData = { email: user.email, name: user.email.split('@')[0], friendId: randomId, icon: '😊', statusMsg: '', isFrozen: false, searchable: true, isOnline: true, lastActive: serverTimestamp() };
                     await setDoc(userRef, currentUserData);
                 }
 
-                document.getElementById('user-display-name').innerText = currentUserData.name;
+                document.getElementById('user-display-name').innerText = currentUserData.icon ? `${currentUserData.icon} ${currentUserData.name}` : currentUserData.name;
                 document.getElementById('profile-name').value = currentUserData.name;
                 document.getElementById('profile-friend-id').value = currentUserData.friendId;
+                document.getElementById('profile-status').value = currentUserData.statusMsg || "";
+                
+                // アイコンを描画
+                if (currentUserData.icon) selectedIcon = currentUserData.icon;
+                if (typeof renderEmojiSelector === "function") renderEmojiSelector();
                 
                 // 検索拒否スイッチの初期化
                 updateSearchToggleUI(currentUserData.searchable !== false);
@@ -335,6 +351,49 @@
 
     document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
+    // --- プロフィールの更新処理 ---
+    document.getElementById('update-profile-btn').addEventListener('click', async () => {
+        const newName = document.getElementById('profile-name').value.trim();
+        const newId = document.getElementById('profile-friend-id').value.trim();
+        const newStatus = document.getElementById('profile-status').value.trim();
+        if (!newName || !newId) return alert("表示名とフレンドIDを入力してください");
+        
+        if (!/^[a-zA-Z0-9_]+$/.test(newId)) return alert("フレンドIDは半角英数字とアンダーバー(_)のみ使えます");
+
+        const btn = document.getElementById('update-profile-btn');
+        btn.innerText = "確認中...";
+        
+        try {
+            if (newId !== currentUserData.friendId) {
+                const q = query(collection(db, "chatApp_users"), where("friendId", "==", newId));
+                const snap = await getDocs(q);
+                if (!snap.empty) {
+                    btn.innerText = "プロフィールを更新";
+                    return alert("このフレンドIDは既に使われています。別のIDにしてください。");
+                }
+            }
+
+            await updateDoc(doc(db, "chatApp_users", auth.currentUser.email), { 
+                name: newName, 
+                friendId: newId,
+                icon: selectedIcon,
+                statusMsg: newStatus
+            });
+            
+            currentUserData.name = newName;
+            currentUserData.friendId = newId;
+            currentUserData.icon = selectedIcon;
+            currentUserData.statusMsg = newStatus;
+            
+            document.getElementById('user-display-name').innerText = `${selectedIcon} ${newName}`;
+            btn.innerText = "プロフィールを更新";
+            alert("プロフィールを更新しました！");
+        } catch(e) {
+            btn.innerText = "プロフィールを更新";
+            alert("エラー: " + e.message);
+        }
+    });
+    
     // ダークモード切替処理
     document.getElementById('theme-toggle').addEventListener('click', () => {
         const isDark = document.documentElement.classList.toggle('dark');
@@ -421,35 +480,62 @@
         await updateDoc(doc(db, "chatApp_friendRequests", requestId), { status: 'accepted' });
     };
 
+    let friendsUnsubs = new Map(); // フレンドのリアルタイム監視用
+
     function listenToFriends() {
         const q1 = query(collection(db, "chatApp_friendRequests"), where("to", "==", auth.currentUser.email), where("status", "==", "accepted"));
         const q2 = query(collection(db, "chatApp_friendRequests"), where("from", "==", auth.currentUser.email), where("status", "==", "accepted"));
         
         let friendsData = new Map();
-        const renderFriends = async () => {
+        
+        window.triggerRenderFriends = async () => {
             const list = document.getElementById('friends-list');
             list.innerHTML = "";
             for (const [id, data] of friendsData.entries()) {
                 const friendEmail = data.to === auth.currentUser.email ? data.from : data.to;
-                const friendName = await getUserName(friendEmail);
+                
+                // フレンドがオンラインになったりプロフを変えたりするのをリアルタイム監視
+                if (!friendsUnsubs.has(friendEmail)) {
+                    const unsub = onSnapshot(doc(db, "chatApp_users", friendEmail), (docSnap) => {
+                        if(docSnap.exists()) {
+                            nameCache.set(friendEmail, docSnap.data()); 
+                            window.triggerRenderFriends(); // 更新されたら再描画
+                        }
+                    });
+                    friendsUnsubs.set(friendEmail, unsub);
+                }
+
+                // キャッシュから情報を取得
+                const friendInfo = nameCache.get(friendEmail) || { name: await getUserName(friendEmail), icon: '👤', statusMsg: '', isOnline: false };
+                const friendName = friendInfo.name;
+                const friendIcon = friendInfo.icon || '👤';
+                const friendStatus = friendInfo.statusMsg || '';
+                
+                // オンラインの時の🟢マーク
+                const onlineMark = friendInfo.isOnline ? '<span class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-slate-700 rounded-full"></span>' : '';
+
                 const div = document.createElement('div');
                 div.className = "flex justify-between items-center bg-white dark:bg-slate-700 p-3 rounded-xl shadow-sm border dark:border-slate-600";
                 div.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-navy-100 dark:bg-slate-600 rounded-full flex items-center justify-center text-navy-600 dark:text-navy-300 font-bold text-lg">
-                            ${friendName.charAt(0).toUpperCase()}
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <div class="relative min-w-10 min-h-10 w-10 h-10 bg-navy-50 dark:bg-slate-600 rounded-full flex items-center justify-center text-2xl border dark:border-slate-500 shadow-sm">
+                            ${friendIcon}
+                            ${onlineMark}
                         </div>
-                        <span class="font-bold dark:text-white">${friendName}</span>
+                        <div class="flex flex-col truncate">
+                            <span class="font-bold dark:text-navy-800 dark:text-white text-sm truncate">${friendName}</span>
+                            ${friendStatus ? `<span class="text-xs text-gray-500 dark:text-gray-400 truncate">${friendStatus}</span>` : ''}
+                        </div>
                     </div>
-                    <button class="bg-navy-100 text-navy-700 dark:bg-slate-600 dark:text-white p-2 rounded-full hover:bg-navy-200 transition" onclick="openChat('${friendEmail}', '${friendName}')">
+                    <button class="ml-2 flex-shrink-0 bg-navy-100 text-navy-700 dark:bg-slate-600 dark:text-white p-2 rounded-full hover:bg-navy-200 transition" onclick="openChat('${friendEmail}', '${friendName}')">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
                     </button>
                 `;
                 list.appendChild(div);
             }
         };
-        onSnapshot(q1, (snap) => { snap.forEach(d => friendsData.set(d.id, d.data())); renderFriends(); });
-        onSnapshot(q2, (snap) => { snap.forEach(d => friendsData.set(d.id, d.data())); renderFriends(); });
+        onSnapshot(q1, (snap) => { snap.forEach(d => friendsData.set(d.id, d.data())); window.triggerRenderFriends(); });
+        onSnapshot(q2, (snap) => { snap.forEach(d => friendsData.set(d.id, d.data())); window.triggerRenderFriends(); });
     }
 
     // --- チャット機能 ---
@@ -591,6 +677,51 @@
             clearPassBtn.classList.add('hidden');
             alert("パスコードを解除しました。");
         }
+    });
+
+    // --- フェーズ2：絵文字選択とオンライン状態管理 ---
+    const EMOJIS = ['😊','😎','😂','🤔','🥺','😴','🥰','🥳','👻','👽','🤖','🐱','🐶','🐰','🦊','🐯','🐸','🐷','🐧','🏀','⚽','🎮','🎧','🎸','🎨','🍕','🍔','🍩','🍣','✨','🔥','💧','🌟','🌸','🍀'];
+    let selectedIcon = '😊';
+
+    window.renderEmojiSelector = () => {
+        const container = document.getElementById('emoji-selector');
+        if(!container) return;
+        container.innerHTML = '';
+        EMOJIS.forEach(emoji => {
+            const btn = document.createElement('button');
+            btn.className = `text-2xl p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition ${selectedIcon === emoji ? 'bg-blue-200 dark:bg-blue-900 border border-blue-500 shadow-sm scale-110' : ''}`;
+            btn.innerText = emoji;
+            btn.onclick = () => {
+                selectedIcon = emoji;
+                renderEmojiSelector();
+            };
+            container.appendChild(btn);
+        });
+    };
+
+    // オンライン状態の更新処理
+    async function setOnlineStatus(isOnline) {
+        if(auth.currentUser) {
+            try {
+                await updateDoc(doc(db, "chatApp_users", auth.currentUser.email), { 
+                    isOnline: isOnline, 
+                    lastActive: serverTimestamp() 
+                });
+            } catch(e) {}
+        }
+    }
+
+    // 画面を開いたり閉じたりした時に自動で切り替える
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+            setOnlineStatus(true);
+        } else {
+            setOnlineStatus(false);
+        }
+    });
+
+    window.addEventListener("beforeunload", () => {
+        setOnlineStatus(false);
     });
 </script>
 </body>
